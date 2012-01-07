@@ -1,4 +1,4 @@
-﻿// fubuvalidation.js v0.1.1
+﻿// fubuvalidation.js v0.1.2
 //
 // Copyright (C)2011 Joshua Arnold
 // Distributed under Apache License, Version 2.0
@@ -168,6 +168,16 @@
 	
 	$.fubuvalidation = module;
 	$.fubuvalidation.defaultHandler = theDefault;
+	
+	var reset = $.fn.resetForm;
+	$.fn.resetForm = function() {
+		var context = {
+			form: $(this)
+		};
+		context.container = $('.validation-summary', context.form);
+		$.fubuvalidation.defaultHandler.reset(context);
+		reset.call(this);
+	};
 
 	$.continuations.applyPolicy({
         matches: function (continuation) {

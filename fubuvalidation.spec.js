@@ -124,6 +124,13 @@ describe('Default validation handler integrated tests', function () {
 		
 		expect(found).toEqual(true);
 	});
+	
+	// this is such a common usage that it should come for free
+	it('should reset default handler when jquery form reset is invoked', function() {
+		process();
+		$('#test').resetForm();
+		expect($('#FirstName', '#test').hasClass('error')).toEqual(false);
+	});
 });
 
 describe('jquery.continuations and fubuvalidation.js integration tests', function() {
