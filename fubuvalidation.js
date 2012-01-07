@@ -1,4 +1,4 @@
-﻿// fubuvalidation.js v0.1.0
+﻿// fubuvalidation.js v0.1.1
 //
 // Copyright (C)2011 Joshua Arnold
 // Distributed under Apache License, Version 2.0
@@ -168,5 +168,16 @@
 	
 	$.fubuvalidation = module;
 	$.fubuvalidation.defaultHandler = theDefault;
-	$.continuations.eventAggregator.subscribe('ContinuationError', $.fubuvalidation, $.fubuvalidation.process);
+
+	$.continuations.applyPolicy({
+        matches: function (continuation) {
+            return $('#' + continuation.correlationId).size() != 0;
+        },
+        execute: function (continuation) {
+            if (!continuation.errors) {
+                continuation.errors = [];
+            }
+            $.fubuvalidation.process(continuation);
+        }
+    });
 } (jQuery));
