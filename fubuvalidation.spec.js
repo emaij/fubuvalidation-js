@@ -127,9 +127,11 @@ describe('Default validation handler integrated tests', function () {
 	
 	// this is such a common usage that it should come for free
 	it('should reset default handler when jquery form reset is invoked', function() {
+		$('#LastName', '#test').val('Test');
 		process();
 		$('#test').resetForm();
 		expect($('#FirstName', '#test').hasClass('error')).toEqual(false);
+		expect($('#LastName', '#test').val()).toEqual('');
 	});
 });
 
@@ -144,12 +146,12 @@ describe('jquery.continuations and fubuvalidation.js integration tests', functio
         server.restore();
     });
 	
-	it('should render errors', function() {
+	it('should renders errors then clear previous errors when validation succeeds', function() {
 		var theContinuation = ObjectMother.continuation();
-		var continuation = JSON.stringify(theContinuation);
+		var continuation = function() { return JSON.stringify(theContinuation) };
 		amplify.subscribe('AjaxStarted', function(request) {
 			server.respondWith([200,
-				{ 'Content-Type': 'application/json', 'X-Correlation-Id': request.correlationId}, continuation
+				{ 'Content-Type': 'application/json', 'X-Correlation-Id': request.correlationId}, continuation()
 			]);
 		});
 		
@@ -174,6 +176,21 @@ describe('jquery.continuations and fubuvalidation.js integration tests', functio
 			});
 			
 			expect(found).toEqual(true);
+			
+			theContinuation.errors = null; // make sure we can handle the absence of errors
+			theContinuation.success = true;
+			
+			$('#test').correlatedSubmit();
+			server.respond();
         });
+		
+		waits(500);
+		
+		runs(function() {
+			expect($('#test > .validation-summary').is(':visible')).toEqual(false);
+			expect($('#test > .validation-summary > li').size()).toEqual(0);
+			
+			expect($('#FirstName', '#test').hasClass('error')).toEqual(false);
+		});
 	});
 });
