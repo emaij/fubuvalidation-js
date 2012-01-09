@@ -32,18 +32,17 @@ describe('fubuvalidation module tests', function() {
 	});
 	
 	it('should use registered element finders', function() {
-		var myResult;
+		var context;
 		var myFinder = function(searchContext) {
-			var element = searchContext.last;
-			var result = { shouldContinue: true };
+			var element = searchContext.element;
 			if(element && element.attr('type') == 'hidden') {
 				var hidden = $('#' + searchContext.key + 'Value', searchContext.form);
-				result.shouldContinue = hidden.size() != 0;
-				result.element = hidden;
+				if(hidden.size() != 0) {
+					searchContext.element = hidden;
+				}
 			}
 			
-			myResult = result;
-			return result;
+			context = searchContext;
 		};
 		
 		$.fubuvalidation.findElementsWith(myFinder);
@@ -55,17 +54,7 @@ describe('fubuvalidation module tests', function() {
 		
 		$.fubuvalidation.process(continuation);
 		
-		expect(myResult.element.attr('id')).toEqual('LookupPropertyValue');
-	});
-	
-	it('should stop finding elements when finder signals for stop', function() {
-		var shouldStop = function() { return { shouldContinue: false } };
-		var shouldNotBeInvoked = function() { expect(true).toEqual(false); };
-		
-		$.fubuvalidation.findElementsWith(shouldStop);
-		$.fubuvalidation.findElementsWith(shouldNotBeInvoked);
-		
-		$.fubuvalidation.process(ObjectMother.continuation());
+		expect(context.element.attr('id')).toEqual('LookupPropertyValue');
 	});
 });
 
