@@ -1,4 +1,4 @@
-﻿// fubuvalidation.js v0.1.3
+﻿// fubuvalidation.js v0.2.4
 //
 // Copyright (C)2011 Joshua Arnold
 // Distributed under Apache License, Version 2.0
@@ -133,7 +133,6 @@
         },
         toValidationContext: function (continuation) {
             var self = this;
-            continuation.form = $('#' + continuation.correlationId);
             this.eachError(continuation, function (e) {
                 if (!e.element) {
                     e.element = self.findElement(continuation, e.field);
@@ -173,7 +172,9 @@
 
     $.continuations.applyPolicy({
         matches: function (continuation) {
-            return $('#' + continuation.correlationId).size() != 0;
+            return continuation.matchOnProperty('form', function(form) {
+				return form.size() != 0;
+			});
         },
         execute: function (continuation) {
             if (!continuation.errors) {

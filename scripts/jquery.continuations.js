@@ -1,4 +1,4 @@
-﻿// jquery.continuations v0.1.2
+﻿// jquery.continuations v0.2.7
 //
 // Copyright (C)2011 Joshua Arnold, Jeremy Miller
 // Distributed Under Apache License, Version 2.0
@@ -16,10 +16,26 @@
 
     var CORRELATION_ID = 'X-Correlation-Id';
     var policies = [];
+	
+	var theContinuation = function () { };
+    theContinuation.prototype = {
+        success: false,
+        errors: [],
+        refresh: false,
+        correlationId: null,
+		matchOnProperty: function(prop, predicate) {
+			return typeof(this[prop]) !== 'undefined' && predicate(this[prop]);
+		},
+        isCorrelated: function () {
+			return this.matchOnProperty('correlationId', function(id) {
+				return id != null;
+			});
+        }
+    };
 
     var refreshPolicy = function () {
         this.matches = function (continuation) {
-            return continuation.refresh === 'true';
+            return continuation.refresh && continuation.refresh.toString() === 'true';
         };
         this.execute = function (continuation) {
             $.continuations.windowService.refresh();
@@ -72,8 +88,8 @@
                         response: jqXHR
                     });
                 },
-                beforeSend: function (xhr) {
-                    self.setupRequest(xhr);
+                beforeSend: function (xhr, settings) {
+                    self.setupRequest(xhr, settings);
                 }
             });
 
@@ -98,9 +114,9 @@
         },
         // Keep this public for form correlation
         setupRequest: function (xhr, settings) {
-            // this could come from $.ajaxSubmit
-            var id = this.correlationId;
-            if (!id) {
+            // this could come from the ajax options
+            var id = settings.correlationId;
+            if (typeof(id) === 'undefined') {
                 id = new Date().getTime().toString();
             }
             xhr.setRequestHeader(CORRELATION_ID, id);
@@ -113,6 +129,8 @@
             return this;
         },
         process: function (continuation) {
+			var standardContinuation = new $.continuations.continuation();
+			continuation = $.extend(standardContinuation, continuation);
             var matchingPolicies = [];
             for (var i = 0; i < policies.length; ++i) {
                 var p = policies[i];
@@ -155,22 +173,37 @@
     // Make it global
     $.continuations = module;
 	$.continuations.useAmplify();
+	$.continuations.continuation = theContinuation;
 	
 	$.fn.correlatedSubmit = function (options) {
-		return this.each(function() {
-			var self = $(this);
-			var id = self.attr('id');
-			if (!id) {
-				id = 'form_' + new Date().getTime().toString();
-				self.attr('id', id);
-			}
-			
-			self.ajaxSubmit({
-				beforeSend: function (xhr) {
-					this.correlationId = id;
-					$.continuations.setupRequest.call(this, xhr);
+		if(typeof(options) === 'undefined') {
+			options = {};
+		}
+		
+        return this.each(function () {
+            var self = $(this);
+            var correlationId = options.correlationId;
+            if (typeof(correlationId) === 'undefined') {
+                var id = self.attr('id');
+                if (!id) {
+                    id = 'form_' + new Date().getTime().toString();
+                    self.attr('id', id);
+                }
+
+                correlationId = id;
+            }
+
+            self.ajaxSubmit({
+				correlationId: correlationId,
+				success: function (continuation, status, jqXHR) {
+					continuation.form = self;
+                    $.continuations.onSuccess({
+                        continuation: continuation,
+                        status: status,
+                        response: jqXHR
+                    });
 				}
-			});
-		});
-	};
+            });
+        });
+    };
 } (jQuery));

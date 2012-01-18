@@ -3,7 +3,8 @@
 var ObjectMother = {
 	continuation: function() {
 		return {
-			correlationId: 'test',
+			correlationId: '123',
+			form: $('#test'),
 			success: false,
 			errors: [{
 				field: 'FirstName',
@@ -137,7 +138,11 @@ describe('jquery.continuations and fubuvalidation.js integration tests', functio
 	
 	it('should renders errors then clear previous errors when validation succeeds', function() {
 		var theContinuation = ObjectMother.continuation();
-		var continuation = function() { return JSON.stringify(theContinuation) };
+		var continuation = function() { 
+			var c = $.extend({}, theContinuation);
+			c.form = null;
+			return JSON.stringify(c) 
+		};
 		amplify.subscribe('AjaxStarted', function(request) {
 			server.respondWith([200,
 				{ 'Content-Type': 'application/json', 'X-Correlation-Id': request.correlationId}, continuation()
